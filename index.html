@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Free, open-source visual builder for TypeSafe AI Jev requests: Choice, Score and Noul questions, parameters, live JSON, cURL and TypeScript export.">
+<title>Jev Agent Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=VT323&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<style>
+img{max-width:100%}[hidden]{display:none!important}
+/* Layout: white nav · pink hero with crop marks + giant tight grotesk · dithered pink "desk" holding retro OS windows (builder | sticky output). Single light look by design. */
+:root{
+  --pink:#E48BA0; --pink-deep:#C9657F; --magenta:#D35BB5; --ink:#232323; --ink-soft:#4A4A4A;
+  --paper:#FFFFFF; --panel:#EDEDED; --panel-2:#DADADA; --muted:#5E5458;
+  --bad:#A3122A; --warn:#7A4B00; --ok:#1F5E2E;
+  --c-choice:#232323; --c-score:#D35BB5; --c-noul:#C9657F;
+  --f-display:"Inter Tight","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter Tight","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --f-pixel:"VT323","JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1320px;margin:0 auto}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+
+/* nav */
+nav.top{background:var(--paper);padding-block:12px}
+nav.top .inner{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap}
+.brand{background:var(--magenta);color:var(--ink);font-weight:500;font-size:18px;padding:4px 8px;text-decoration:none;letter-spacing:-.01em}
+nav.top .links{display:flex;gap:18px;margin-left:auto;align-items:center;flex-wrap:wrap}
+nav.top a.l{color:var(--ink);text-decoration:none;font-size:16px}
+nav.top a.l:hover{text-decoration:underline}
+
+/* hero */
+.hero{background:var(--pink);padding-block:28px 36px}
+.crop{position:relative;padding:28px 12px}
+.crop::before,.crop::after,.crop>.c3,.crop>.c4{content:"";position:absolute;width:12px;height:12px;border:0 solid var(--ink)}
+.crop::before{top:0;left:0;border-top-width:1px;border-left-width:1px}
+.crop::after{top:0;right:0;border-top-width:1px;border-right-width:1px}
+.crop>.c3{bottom:0;left:0;border-bottom-width:1px;border-left-width:1px}
+.crop>.c4{bottom:0;right:0;border-bottom-width:1px;border-right-width:1px}
+.leader{display:flex;align-items:baseline;gap:6px;justify-content:center;font-size:15px;max-width:560px;margin:0 auto 18px}
+.leader .dots{flex:1;border-bottom:2px dotted var(--ink);transform:translateY(-4px);min-width:24px}
+h1{font-family:var(--f-display);font-weight:500;font-size:clamp(40px,8.4vw,128px);line-height:.9;letter-spacing:-.045em;text-align:center;margin:0 auto;max-width:14ch;text-wrap:balance;color:var(--ink)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:34px}
+.cols>div{border-left:1px solid var(--ink);padding-left:12px;display:flex;flex-direction:column;gap:18px}
+.cols .lab{font-family:var(--f-mono);font-size:12px;letter-spacing:.02em}
+.cols p{margin:0;font-size:17px;line-height:1.3;max-width:34ch}
+@media (max-width:720px){.cols{grid-template-columns:1fr;gap:16px}}
+
+/* desk */
+.desk{background-color:var(--pink);background-image:radial-gradient(rgba(35,35,35,.38) .8px,transparent 1px);background-size:5px 5px;padding-block:24px 40px;border-top:1px solid var(--ink)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.tag{font-family:var(--f-pixel);font-size:20px;line-height:1;background:var(--ink);color:var(--paper);padding:3px 6px}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* window */
+section.box{background:var(--panel);border:1px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:0 14px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.box h2{margin:0 -14px;padding:3px 10px 2px;background:var(--ink);color:var(--paper);font-family:var(--f-pixel);font-weight:400;font-size:21px;line-height:1.1;letter-spacing:.01em;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.box h2 small{font-family:var(--f-pixel);font-size:18px;color:var(--pink)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);min-width:0}
+input[type=text],textarea,select{font:inherit;font-family:var(--f-body);font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--ink);border-radius:0;padding:7px 9px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
+textarea{font-family:var(--f-mono);font-size:13px;resize:vertical;min-height:60px;line-height:1.45}
+input.mono{font-family:var(--f-mono);font-size:13px}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--magenta);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>*{flex:1 1 160px}
+.row>.narrow{flex:0 1 150px}
+button{font:inherit;font-size:14px;font-weight:500;border-radius:0;border:1px solid var(--ink);background:var(--paper);color:var(--ink);padding:6px 11px;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--ink);color:var(--paper)}
+button:disabled{opacity:.4;cursor:default;background:var(--paper);color:var(--ink)}
+button.primary{background:var(--ink);color:var(--paper)}
+button.primary:hover{background:var(--magenta);color:var(--ink)}
+button.ghost{border-color:transparent;background:transparent;color:var(--ink-soft);padding:5px 8px}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button.icon{padding:4px 8px;font-family:var(--f-mono)}
+.addbar{display:flex;flex-wrap:wrap;gap:8px}
+.add-choice,.add-score,.add-noul{font-family:var(--f-pixel);font-size:19px;padding:3px 10px;font-weight:400}
+.add-choice{border-left:6px solid var(--c-choice)} .add-score{border-left:6px solid var(--c-score)} .add-noul{border-left:6px solid var(--c-noul)}
+
+/* params */
+.param{display:grid;grid-template-columns:minmax(0,150px) minmax(0,96px) minmax(0,1fr) auto;gap:8px;align-items:start;padding:10px 0;border-top:1px dashed var(--ink-soft)}
+.param:first-of-type{border-top:0}
+.param .val{grid-column:1 / -1}
+@media (max-width:520px){.param{grid-template-columns:minmax(0,1fr) minmax(0,96px) auto}.param .desc{grid-column:1 / -1;order:5}}
+
+/* questions */
+.q{border:1px solid var(--ink);border-left:6px solid var(--tc);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.q[data-type=choice]{--tc:var(--c-choice)} .q[data-type=score]{--tc:var(--c-score)} .q[data-type=noul]{--tc:var(--c-noul)}
+.qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{font-family:var(--f-pixel);font-size:19px;line-height:1;text-transform:uppercase;padding:3px 7px;background:var(--tc);color:var(--paper)}
+.q[data-type=score] .chip,.q[data-type=noul] .chip{color:var(--ink)}
+.qhead input{flex:1 1 180px;width:auto}
+.qhead .tools{display:flex;gap:4px;margin-left:auto}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) auto;gap:6px;align-items:start}
+.opt .lvl{font-family:var(--f-pixel);font-size:20px;padding-top:6px;text-align:right}
+.opt.level{grid-template-columns:28px minmax(0,1fr) auto}
+@media (max-width:520px){.opt{grid-template-columns:minmax(0,1fr) auto}.opt .k{grid-column:1 / 2}.opt textarea,.opt .d{grid-column:1 / -1;order:3}.opt.level{grid-template-columns:24px minmax(0,1fr) auto}.opt.level .d{grid-column:auto;order:0}}
+.opt textarea{min-height:38px;height:38px}
+.seg{display:inline-flex;border:1px solid var(--ink)}
+.seg button{border:0;font-weight:500;padding:5px 10px;background:var(--paper);color:var(--ink)}
+.seg button+button{border-left:1px solid var(--ink)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}
+.check input{width:16px;height:16px;accent-color:var(--ink)}
+.count{font-family:var(--f-mono);font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.pv{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pv code{font-family:var(--f-mono);font-size:12px;padding:2px 7px;background:var(--panel-2)}
+.pv code::before{content:"✣ "}
+
+/* output */
+.out{position:sticky;top:max(12px,env(safe-area-inset-top,0px))}
+@media (max-width:960px){.out{position:static}}
+.tabs{display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--ink);align-self:flex-start;background:var(--paper)}
+.tabs button{border:0;padding:5px 11px;font-weight:500}
+.tabs button+button{border-left:1px solid var(--ink)}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+pre.code{margin:0;background:var(--paper);color:var(--ink);border:1px solid var(--ink);font-family:var(--f-mono);font-size:12.5px;line-height:1.55;padding:14px;overflow:auto;max-height:min(62vh,680px);white-space:pre;tab-size:2}
+.code .k{color:var(--ink);font-weight:500} .code .s{color:#7A2E4A} .code .n{color:#9A2F86} .code .l{color:var(--magenta);font-weight:500} .code .ph{background:var(--pink);color:var(--ink)}
+.outbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.outbar .spacer{flex:1}
+.issues{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.issues li{font-size:13px;padding:6px 8px;display:flex;gap:8px;align-items:baseline;background:var(--paper);border:1px solid currentColor}
+.issues li.e{color:var(--bad)} .issues li.w{color:var(--warn)}
+.issues li b{font-family:var(--f-pixel);font-weight:400;font-size:17px;line-height:1;background:currentColor;padding:1px 5px}
+.issues li b span{color:var(--paper)}
+.okline{font-family:var(--f-pixel);font-size:20px;color:var(--ok);margin:0}
+.stats{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--f-mono);font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink);font-weight:500}
+details.imp summary{cursor:pointer;font-weight:500;font-size:15px}
+details.imp[open] summary{margin-bottom:10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:6px 12px;font-family:var(--f-pixel);font-size:20px}
+
+/* footer */
+footer.foot{background:var(--paper);padding-block:22px;border-top:1px solid var(--ink)}
+footer.foot .inner{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-start;justify-content:space-between}
+.vbox{border:1px solid var(--ink);font-family:var(--f-pixel);font-size:19px;line-height:1.1;min-width:240px;max-width:100%}
+.vbox .t{background:var(--ink);color:var(--paper);padding:2px 6px}
+.vbox .b{padding:5px 8px}
+footer.foot .meta{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;max-width:60ch}
+footer.foot a{color:var(--ink)}
+.jump{display:none}
+@media (max-width:960px){.jump{display:inline-block}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="top gut"><div class="inner">
+  <a class="brand" href="#">Jev Agent Builder</a>
+  <div class="links">
+    <a class="l" href="https://docs.typesafe.ai/introduction" target="_blank" rel="noopener">Docs</a>
+    <a class="l" href="https://console.typesafe.ai/playground" target="_blank" rel="noopener">Playground</a>
+    <a class="l" href="https://github.com/enzotripoli/jev-agent-builder" target="_blank" rel="noopener">GitHub</a>
+    <div class="seg" role="group" aria-label="Language">
+      <button data-act="lang" data-l="en">EN</button>
+      <button data-act="lang" data-l="fr">FR</button>
+    </div>
+  </div>
+</div></nav>
+
+<header class="hero gut"><div class="inner crop"><span class="c3"></span><span class="c4"></span>
+  <div class="leader"><span data-i18n="leader_l"></span><span class="dots"></span><span data-i18n="leader_r"></span></div>
+  <h1 data-i18n="h1"></h1>
+  <div class="cols">
+    <div><span class="lab" data-i18n="c1_l"></span><p data-i18n="c1"></p></div>
+    <div><span class="lab" data-i18n="c2_l"></span><p data-i18n="c2"></p></div>
+    <div><span class="lab" data-i18n="c3_l"></span><p data-i18n="c3"></p></div>
+  </div>
+</div></header>
+
+<main class="desk gut"><div class="inner">
+  <div class="toolbar">
+    <span class="tag">TS.JEV.BUILDER</span>
+    <select id="presetSel" aria-label="Examples" style="width:auto;min-width:240px;flex:0 1 320px"></select>
+    <a class="jump" href="#output"><button tabindex="-1" data-i18n="jump"></button></a>
+  </div>
+  <div class="grid">
+    <div class="col" id="builder"></div>
+    <div class="col out" id="output">
+      <section class="box">
+        <h2>Output 1.1 <small>/v1/systemone</small></h2>
+        <div class="tabs" role="tablist" id="tabs">
+          <button role="tab" data-tab="request" aria-selected="true" data-i18n="tab_request"></button>
+          <button role="tab" data-tab="agent" aria-selected="false" data-i18n="tab_agent"></button>
+          <button role="tab" data-tab="curl" aria-selected="false">cURL</button>
+          <button role="tab" data-tab="ts" aria-selected="false">TypeScript</button>
+        </div>
+        <p class="hint" id="tabhint"></p>
+        <pre class="code" id="code"></pre>
+        <div class="outbar">
+          <button class="primary" data-act="copy" data-i18n="copy"></button>
+          <a id="pglink" target="_blank" rel="noopener"><button tabindex="-1" data-i18n="playground"></button></a>
+          <span class="spacer"></span>
+          <div class="stats" id="stats"></div>
+        </div>
+        <div id="issues"></div>
+      </section>
+      <section class="box">
+        <h2>Import 1.0</h2>
+        <details class="imp">
+          <summary data-i18n="import_title"></summary>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <p class="hint" data-i18n-html="import_hint"></p>
+            <textarea id="importText" rows="6" placeholder='{ "state": "…", "questions": { … } }'></textarea>
+            <div class="row"><button class="narrow" data-act="import" data-i18n="import_btn"></button><span class="hint" id="importMsg"></span></div>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+</div></main>
+
+<footer class="foot gut"><div class="inner">
+  <div class="vbox"><div class="t">Jev Agent Builder</div><div class="b">Version 0.3<br>MIT. Made by ET Technology Consulting.</div></div>
+  <div class="meta">
+    <span data-i18n="footer"></span>
+    <span data-i18n="unofficial"></span>
+    <span><span data-i18n="format"></span> <a href="https://docs.typesafe.ai/primitives" target="_blank" rel="noopener">docs.typesafe.ai/primitives</a> · <a href="https://et-technology-consulting.com" target="_blank" rel="noopener">et-technology-consulting.com</a></span>
+  </div>
+</div></footer>
+
+<script>
+const LS_KEY = 'jev-agent-builder-v2';
+const LANG_KEY = 'jev-agent-builder-lang';
+const NONE_KEY = 'none_of_the_above';
+
+/* ---------- i18n ---------- */
+const I18N = {
+  en: {
+    leader_l: 'Introducing Jev Agent Builder', leader_r: 'Agents, not JSON',
+    h1: 'Build Jev Agents Without Writing JSON',
+    c1_l: 'No JSON By Hand', c1: 'Compose Choice, Score and Noul questions in a form. The request builds live.',
+    c2_l: 'Parametric', c2: 'Write {{params}} anywhere. One agent, every input.',
+    c3_l: 'Ships Anywhere', c3: 'Export the request, a reusable definition, cURL or TypeScript.',
+    unofficial: 'Unofficial tool, not affiliated with TypeSafe AI. Visual style is a tribute.',
+    lede: 'Compose a Jev agent (TypeSafe AI): a state, <code class="mono">{{…}}</code> parameters and Choice, Score or Noul questions. The JSON for <code class="mono">POST /v1/systemone</code> updates live.',
+    examples: 'Load an example', jump: 'See the JSON ↓', tab_request: 'Request', tab_agent: 'Agent (template)',
+    copy: 'Copy', playground: 'Open in Playground ↗', import_title: 'Import JSON',
+    import_hint: 'Paste an agent definition exported from the “Agent” tab, or a raw request <code class="mono">{ state, questions }</code>.',
+    import_btn: 'Import', footer: 'Free, open-source tool (MIT license). Nothing is sent anywhere: everything stays in your browser.', format: 'Format:',
+    agent: 'Agent', name: 'Name', model: 'Model', description: 'Description', desc_ph: 'What this agent is for',
+    params: 'Parameters', params_sub: 'usable anywhere as', params_empty: 'No parameters yet. Add some to reuse the agent with different values, such as a list of categories or a document to evaluate.',
+    p_text: 'text', p_json: 'JSON', p_type: 'Parameter type', p_desc: 'Description', p_val_text: 'Test value', p_val_json: '{ "key": "value" } or [ … ]', add_param: '+ Parameter', rm_param: 'Remove parameter',
+    state: 'State', state_sub: 'the data Jev evaluates', state_text: 'Text', state_json: 'JSON (object or array)', state_fmt: 'State format',
+    state_ph_text: 'The text to evaluate, or {{param}}', lang_hint: 'English is Jev\'s main training language. Other languages are accepted with somewhat lower accuracy.',
+    models_hint: '<span class="mono">jev-latest</span> = latest stable version, <span class="mono">jev-preview</span> = newest version. Pin a versioned id (e.g. <span class="mono">jev-1.14.0</span>) to freeze behaviour.',
+    state_hint: 'Inside a JSON object, put parameters in quotes: <span class="mono">"{{ticket}}"</span>. A JSON parameter alone in a value is inserted as an object.',
+    questions: 'Questions', questions_sub: 'evaluated in parallel, one answer per id', questions_empty: 'Add a question: Choice to pick an option, Score to place on a scale, Noul for a yes/no.',
+    q_id: 'Question id', up: 'Move up', down: 'Move down', dup: 'Duplicate', rm_q: 'Remove question',
+    instructions: 'Instructions', instr_ph: 'The question asked to Jev (text, or a JSON object)',
+    src_label: 'Options source', src_manual: 'Typed options', src_param: 'From a parameter', param_json: 'JSON parameter', choose: '— choose —',
+    param_explain: 'Use this when the options change at runtime (categories, intents, agents…). Pick a JSON parameter that holds the list. Its test value is used for the preview.',
+    no_json_param: 'No list parameter yet. Create one:', new_list: '+ New option list', list_value: k => `Options in “${k}” (also editable under Parameters)`, preview: 'Options sent:',
+    param_hint: 'Accepts an object <span class="mono">{ "key": "description" }</span>, an array of strings, or an array of <span class="mono">{ key, description }</span> objects.',
+    opt_key: 'option_key', opt_desc: 'Description (empty = null)', opt_key_aria: 'Option key', opt_desc_aria: 'Option description', rm_opt: 'Remove option', add_opt: '+ Option',
+    add_none: 'Add <span class="mono">none_of_the_above</span> (lets Jev say “none fit”)', none_desc: 'None of the other options fits',
+    level_ph: 'Describe a situation, not a degree', level: 'Level', rm_level: 'Remove level', add_level: '+ Level', levels_count: n => `${n} / 10 levels, lowest to highest`,
+    noul_crit: 'Spell out what yes and no mean', yes_ph: 'What counts as yes', no_ph: 'What counts as no',
+    opts_count: n => `${n} / 255 options`,
+    hint_request: 'Request body, with parameters replaced by their test values.',
+    hint_agent: 'Reusable definition: parameters and placeholders are kept. Version it or load it from your app.',
+    hint_curl: 'Direct API call. Set TYPESAFE_API_KEY first.',
+    hint_ts: 'Typed function that fills the parameters then calls the API with fetch (Node 20+).',
+    n_questions: n => `<b>${n}</b> question${n > 1 ? 's' : ''}`, per_k: 'per 1,000 calls',
+    valid: '✓ Valid request.', err: 'Error', note: 'Note', copied: 'Copied', select_fallback: 'Text selected: copy it with ⌘C / Ctrl+C',
+    bad_json: 'Invalid JSON.', imported: n => `Imported: ${n} question(s).`, import_fail: 'Import failed: ', unknown_type: t => `unknown type “${t}”`,
+    e: {
+      p_nokey: 'A parameter has no key: it is ignored.', p_chars: k => `Parameter “${k}”: use letters, digits, _ . -`, p_dup: k => `Parameter “${k}” is defined twice.`, p_json: k => `Parameter “${k}”: invalid JSON.`,
+      state_json: 'State: invalid JSON. Parameters must be in quotes.', state_empty: 'The state is empty.',
+      q_noid: l => `Question ${l}: missing id.`, q_badid: id => `Question “${id}”: invalid id (letters, digits, _).`, q_dupid: id => `Question “${id}”: duplicate id.`, q_noinstr: l => `Question ${l}: empty instructions.`,
+      c_noparam: l => `Question ${l}: pick the parameter that provides the options.`, c_missing: (l, p) => `Question ${l}: parameter “${p}” not found or invalid.`, c_shape: (l, p) => `Question ${l}: parameter “${p}” must be a JSON object or array.`, c_text: (l, p) => `Question ${l}: “${p}” is a text parameter. Pick a JSON parameter that holds the option list.`,
+      c_nokey: l => `Question ${l}: an option has no key.`, c_dupkey: (l, k) => `Question ${l}: option “${k}” is duplicated.`, c_min: l => `Question ${l}: no options. A Choice needs at least one.`, c_one: l => `Question ${l}: only one option, so Jev will always pick it. Add another, or use a Noul.`, ctx_req: n => `About ${n} tokens: over the 64k-token limit per request. Split the questions across several calls, or see the long-context header in the Models docs.`, ctx_q: (l, n) => `Question ${l}: about ${n} tokens with the state, over the 32k-token limit per question.`, c_max: (l, n) => `Question ${l}: ${n} options, the limit is 255.`,
+      s_min: l => `Question ${l}: at least 2 levels are needed.`, s_empty: l => `Question ${l}: empty levels are ignored.`, s_digit: l => `Question ${l}: a level is only a number. Jev scores better with described situations.`,
+      n_both: l => `Question ${l}: describe both true and false.`, no_q: 'Add at least one question.',
+      undef: k => `{{${k}}} is not defined by any parameter and is left as is.`, unused: k => `Parameter “${k}” is not used anywhere.`
+    }
+  },
+  fr: {
+    leader_l: 'Voici Jev Agent Builder', leader_r: 'Des agents, pas du JSON',
+    h1: 'Construisez vos agents Jev sans écrire de JSON',
+    c1_l: 'Zéro JSON à la main', c1: 'Composez vos questions Choice, Score et Noul dans un formulaire. La requête se construit en direct.',
+    c2_l: 'Paramétrique', c2: 'Écrivez des {{paramètres}} partout. Un agent, toutes vos données.',
+    c3_l: 'Prêt à brancher', c3: 'Exportez la requête, une définition réutilisable, du cURL ou du TypeScript.',
+    unofficial: 'Outil non officiel, sans lien avec TypeSafe AI. Le style visuel est un clin d\'œil.',
+    lede: 'Composez un agent Jev (TypeSafe AI) : un état, des paramètres <code class="mono">{{…}}</code> et des questions Choice, Score ou Noul. Le JSON prêt pour <code class="mono">POST /v1/systemone</code> se met à jour en direct.',
+    examples: 'Charger un exemple', jump: 'Voir le JSON ↓', tab_request: 'Requête', tab_agent: 'Agent (template)',
+    copy: 'Copier', playground: 'Ouvrir dans le Playground ↗', import_title: 'Importer un JSON',
+    import_hint: 'Collez une définition d\'agent exportée depuis l\'onglet « Agent » ou une requête brute <code class="mono">{ state, questions }</code>.',
+    import_btn: 'Importer', footer: 'Outil libre et open source (licence MIT). Rien n\'est envoyé : tout reste dans votre navigateur.', format: 'Format :',
+    agent: 'Agent', name: 'Nom', model: 'Modèle', description: 'Description', desc_ph: 'À quoi sert cet agent',
+    params: 'Paramètres', params_sub: 'utilisables partout via', params_empty: 'Aucun paramètre. Ajoutez-en pour réutiliser l\'agent avec des valeurs différentes, par exemple une liste de catégories ou un document à évaluer.',
+    p_text: 'texte', p_json: 'JSON', p_type: 'Type du paramètre', p_desc: 'Description', p_val_text: 'Valeur de test', p_val_json: '{ "cle": "valeur" } ou [ … ]', add_param: '+ Paramètre', rm_param: 'Supprimer le paramètre',
+    state: 'État', state_sub: 'les données évaluées par Jev', state_text: 'Texte', state_json: 'JSON (objet ou tableau)', state_fmt: 'Format de l\'état',
+    state_ph_text: 'Le texte à évaluer, ou {{param}}', lang_hint: 'Jev est surtout entraîné en anglais. Les autres langues, dont le français, sont acceptées avec une précision un peu plus faible.',
+    models_hint: '<span class="mono">jev-latest</span> = dernière version stable, <span class="mono">jev-preview</span> = version la plus récente. Fixez un id versionné (ex. <span class="mono">jev-1.14.0</span>) pour figer le comportement.',
+    state_hint: 'Dans un objet JSON, mettez les paramètres entre guillemets : <span class="mono">"{{ticket}}"</span>. Un paramètre JSON seul dans une valeur est inséré comme objet.',
+    questions: 'Questions', questions_sub: 'évaluées en parallèle, une réponse par id', questions_empty: 'Ajoutez une question : Choice pour choisir une option, Score pour placer sur une échelle, Noul pour un oui/non.',
+    q_id: 'Identifiant de la question', up: 'Monter', down: 'Descendre', dup: 'Dupliquer', rm_q: 'Supprimer la question',
+    instructions: 'Instructions', instr_ph: 'La question posée à Jev (texte, ou objet JSON)',
+    src_label: 'Source des options', src_manual: 'Options saisies', src_param: 'Depuis un paramètre', param_json: 'Paramètre JSON', choose: '— choisir —',
+    param_explain: 'À utiliser quand les options changent à l\'exécution (catégories, intentions, agents…). Choisissez un paramètre JSON qui contient la liste. Sa valeur de test sert d\'aperçu.',
+    no_json_param: 'Aucun paramètre de liste pour l\'instant. Créez-en un :', new_list: '+ Nouvelle liste d\'options', list_value: k => `Options de « ${k} » (modifiable aussi dans Paramètres)`, preview: 'Options envoyées :',
+    param_hint: 'Accepte un objet <span class="mono">{ "cle": "description" }</span>, un tableau de chaînes, ou un tableau d\'objets <span class="mono">{ key, description }</span>.',
+    opt_key: 'cle_option', opt_desc: 'Description (vide = null)', opt_key_aria: 'Clé de l\'option', opt_desc_aria: 'Description de l\'option', rm_opt: 'Supprimer l\'option', add_opt: '+ Option',
+    add_none: 'Ajouter <span class="mono">none_of_the_above</span> (Jev peut dire « aucune ne convient »)', none_desc: 'Aucune des autres options ne convient',
+    level_ph: 'Décrivez une situation, pas un degré', level: 'Niveau', rm_level: 'Supprimer le niveau', add_level: '+ Niveau', levels_count: n => `${n} / 10 niveaux, du plus bas au plus haut`,
+    noul_crit: 'Préciser ce que signifient oui et non', yes_ph: 'Ce qui compte comme oui', no_ph: 'Ce qui compte comme non',
+    opts_count: n => `${n} / 255 options`,
+    hint_request: 'Corps de la requête, paramètres remplacés par leurs valeurs de test.',
+    hint_agent: 'Définition réutilisable : paramètres et placeholders conservés. À versionner ou à charger depuis votre application.',
+    hint_curl: 'Appel direct de l\'API. Définissez TYPESAFE_API_KEY avant.',
+    hint_ts: 'Fonction typée qui remplit les paramètres puis appelle l\'API avec fetch (Node 20+).',
+    n_questions: n => `<b>${n}</b> question${n > 1 ? 's' : ''}`, per_k: 'pour 1 000 appels',
+    valid: '✓ Requête valide.', err: 'Erreur', note: 'Note', copied: 'Copié', select_fallback: 'Texte sélectionné : copiez-le avec ⌘C / Ctrl+C',
+    bad_json: 'JSON invalide.', imported: n => `Importé : ${n} question(s).`, import_fail: 'Import impossible : ', unknown_type: t => `type inconnu « ${t} »`,
+    e: {
+      p_nokey: 'Un paramètre n\'a pas de clé : il est ignoré.', p_chars: k => `Paramètre « ${k} » : utilisez lettres, chiffres, _ . -`, p_dup: k => `Paramètre « ${k} » défini deux fois.`, p_json: k => `Paramètre « ${k} » : JSON invalide.`,
+      state_json: 'État : JSON invalide. Les paramètres doivent être entre guillemets.', state_empty: 'L\'état est vide.',
+      q_noid: l => `Question ${l} : identifiant manquant.`, q_badid: id => `Question « ${id} » : identifiant invalide (lettres, chiffres, _).`, q_dupid: id => `Question « ${id} » : identifiant en double.`, q_noinstr: l => `Question ${l} : instructions vides.`,
+      c_noparam: l => `Question ${l} : choisissez le paramètre qui fournit les options.`, c_missing: (l, p) => `Question ${l} : paramètre « ${p} » introuvable ou invalide.`, c_shape: (l, p) => `Question ${l} : le paramètre « ${p} » doit être un objet ou un tableau JSON.`, c_text: (l, p) => `Question ${l} : « ${p} » est un paramètre texte. Choisissez un paramètre JSON qui contient la liste des options.`,
+      c_nokey: l => `Question ${l} : une option n'a pas de clé.`, c_dupkey: (l, k) => `Question ${l} : option « ${k} » en double.`, c_min: l => `Question ${l} : aucune option. Un Choice en demande au moins une.`, c_one: l => `Question ${l} : une seule option, Jev la choisira toujours. Ajoutez-en une autre ou utilisez un Noul.`, ctx_req: n => `Environ ${n} tokens : au-delà de la limite de 64k tokens par requête. Répartissez les questions sur plusieurs appels, ou voyez l'en-tête de contexte long dans la doc Models.`, ctx_q: (l, n) => `Question ${l} : environ ${n} tokens avec l'état, au-delà de la limite de 32k tokens par question.`, c_max: (l, n) => `Question ${l} : ${n} options, la limite est 255.`,
+      s_min: l => `Question ${l} : il faut au moins 2 niveaux.`, s_empty: l => `Question ${l} : les niveaux vides sont ignorés.`, s_digit: l => `Question ${l} : un niveau n'est qu'un chiffre. Jev score mieux avec des situations décrites.`,
+      n_both: l => `Question ${l} : décrivez à la fois true et false.`, no_q: 'Ajoutez au moins une question.',
+      undef: k => `{{${k}}} n'est défini par aucun paramètre et reste tel quel.`, unused: k => `Le paramètre « ${k} » n'est utilisé nulle part.`
+    }
+  }
+};
+let lang;
+try { lang = localStorage.getItem(LANG_KEY); } catch (e) {}
+if (!I18N[lang]) lang = (navigator.language || 'en').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+const T = () => I18N[lang];
+
+/* ---------- examples (generic) ---------- */
+const json = v => JSON.stringify(v, null, 2);
+const ch = (id, instructions, items, extra = {}) => ({ id, type: 'choice', instructions, source: 'manual', param: '', addNone: false, items: Object.entries(items).map(([key, desc]) => ({ key, desc: desc ?? '' })), ...extra });
+const chP = (id, instructions, param, addNone = true) => ({ id, type: 'choice', instructions, source: 'param', param, addNone, items: [] });
+const sc = (id, instructions, levels) => ({ id, type: 'score', instructions, levels });
+const no = (id, instructions, t, f) => ({ id, type: 'noul', instructions, useCriteria: !!t, t: t || '', f: f || '' });
+const P = (key, type, desc, value) => ({ key, type, desc, value: type === 'json' ? json(value) : value });
+
+const PRESETS = {
+  support: {
+    label: { en: 'Support ticket triage', fr: 'Triage de tickets support' },
+    en: () => ({ name: 'support-triage', description: 'Routes an incoming support email and flags urgency.', model: 'jev-latest',
+      params: [P('email', 'text', 'Email body', "Hi, since this morning none of our invoices are going out and customers keep chasing us. This is the second time this month. Please treat as urgent.")],
+      stateMode: 'text', state: '{{email}}',
+      questions: [
+        ch('department', 'Which team should handle this message?', { billing: 'Payments, invoices, subscriptions', technical: 'Bugs, outages, integration problems', sales: 'Pricing, quotes, commercial questions' }),
+        sc('frustration', 'How frustrated does the customer seem?', ['Calm, just stating facts', 'Frustrated but civil', 'Very angry, strong language or threatening to leave']),
+        no('is_urgent', 'The message conveys urgency or time-sensitivity.'),
+        no('is_repeat', 'The customer has contacted support about this before.', 'Mentions a prior contact, ticket or incident', 'No sign of previous contact')
+      ] }),
+    fr: () => ({ name: 'support-triage', description: 'Oriente un email support entrant et signale l\'urgence.', model: 'jev-latest',
+      params: [P('email', 'text', "Corps de l'email", "Bonjour, depuis ce matin plus aucune facture ne part et nos clients relancent. C'est la deuxième fois ce mois-ci. Merci de traiter en urgence.")],
+      stateMode: 'text', state: '{{email}}',
+      questions: [
+        ch('department', 'Quelle équipe doit traiter ce message ?', { billing: 'Paiements, factures, abonnements', technical: "Bugs, panne, problème d'intégration", sales: 'Tarifs, devis, questions commerciales' }),
+        sc('frustration', 'À quel point le client semble-t-il frustré ?', ['Calme, expose les faits', 'Agacé mais courtois', 'Très en colère, menace de partir']),
+        no('is_urgent', 'Le message exprime une urgence.'),
+        no('is_repeat', 'Le client a déjà contacté le support à ce sujet.', 'Mentionne un contact, un ticket ou un incident précédent', 'Aucune trace de contact précédent')
+      ] })
+  },
+  moderation: {
+    label: { en: 'Content moderation', fr: 'Modération de contenu' },
+    en: () => ({ name: 'comment-moderation', description: 'Checks a user comment against community rules before publishing.', model: 'jev-latest',
+      params: [P('comment', 'text', 'Comment to check', "Honestly this tutorial is useless, the author clearly has no idea what he's doing. Anyone who follows it is an idiot. DM me for a better one at cheap-courses.example"),
+        P('platform', 'text', 'Where it is posted', 'A programming tutorials site')],
+      stateMode: 'json', state: json({ platform: '{{platform}}', comment: '{{comment}}' }),
+      questions: [
+        sc('toxicity', 'How hostile is this comment toward people?', ['Neutral or friendly', 'Blunt criticism of the content, not the people', 'Insults or mockery aimed at people', 'Threats, slurs or harassment']),
+        no('is_spam', 'The comment promotes an external product, service or link.'),
+        no('has_personal_data', 'The comment contains personal data such as a phone number, home address or email.'),
+        ch('action', 'What should a moderator do with this comment?', { publish: 'Fine to show as is', hide_and_review: 'Hide until a moderator reviews it', remove: 'Clearly breaks the rules' })
+      ] }),
+    fr: () => ({ name: 'comment-moderation', description: 'Vérifie un commentaire utilisateur avant publication.', model: 'jev-latest',
+      params: [P('comment', 'text', 'Commentaire à vérifier', "Franchement ce tuto est nul, l'auteur ne sait pas ce qu'il fait. Ceux qui le suivent sont des idiots. Écrivez-moi pour un meilleur cours sur cheap-courses.example"),
+        P('platform', 'text', 'Où il est publié', 'Un site de tutoriels de programmation')],
+      stateMode: 'json', state: json({ platform: '{{platform}}', comment: '{{comment}}' }),
+      questions: [
+        sc('toxicity', 'À quel point ce commentaire est-il hostile envers des personnes ?', ['Neutre ou amical', 'Critique franche du contenu, pas des personnes', 'Insultes ou moqueries visant des personnes', 'Menaces, injures discriminatoires ou harcèlement']),
+        no('is_spam', 'Le commentaire fait la promotion d\'un produit, service ou lien externe.'),
+        no('has_personal_data', 'Le commentaire contient des données personnelles (téléphone, adresse, email).'),
+        ch('action', 'Que doit faire un modérateur avec ce commentaire ?', { publish: 'Peut être affiché tel quel', hide_and_review: 'Masquer en attendant une revue', remove: 'Enfreint clairement les règles' })
+      ] })
+  },
+  leads: {
+    label: { en: 'Lead qualification', fr: 'Qualification de leads' },
+    en: () => ({ name: 'lead-qualification', description: 'Scores an inbound contact-form lead against your ideal customer profile.', model: 'jev-latest',
+      params: [P('icp', 'text', 'Ideal customer profile', 'B2B SaaS companies with 50 to 500 employees, a dedicated ops team, based in Europe or North America.'),
+        P('lead', 'json', 'Form submission', { company: 'Northwind Logistics', size: '200 employees', role: 'Head of Operations', message: 'We are evaluating tools to automate carrier invoice checks before Q1. Can we get a demo next week?' })],
+      stateMode: 'json', state: json({ ideal_customer_profile: '{{icp}}', lead: '{{lead}}' }),
+      questions: [
+        sc('icp_fit', 'How well does this company match the ideal customer profile?', ['Outside the profile', 'Partial match on one criterion', 'Matches most criteria', 'Matches every criterion']),
+        sc('buying_intent', 'How close is the lead to buying?', ['Just curious or researching', 'Exploring options, no timeline', 'Active evaluation with a timeline', 'Ready to buy, asks for pricing or contract']),
+        no('is_decision_maker', 'The contact can influence or make the purchase decision.'),
+        ch('next_step', 'What is the best next step?', { book_demo: 'Book a demo with sales', nurture: 'Add to a nurture email sequence', disqualify: 'Not a fit, close politely' })
+      ] }),
+    fr: () => ({ name: 'lead-qualification', description: 'Note un lead entrant par rapport à votre client idéal.', model: 'jev-latest',
+      params: [P('icp', 'text', 'Profil client idéal', 'Éditeurs SaaS B2B de 50 à 500 salariés, avec une équipe ops dédiée, en Europe ou en Amérique du Nord.'),
+        P('lead', 'json', 'Formulaire reçu', { company: 'Northwind Logistique', size: '200 salariés', role: 'Directrice des opérations', message: 'Nous cherchons un outil pour automatiser le contrôle des factures transporteurs avant le T1. Une démo la semaine prochaine ?' })],
+      stateMode: 'json', state: json({ ideal_customer_profile: '{{icp}}', lead: '{{lead}}' }),
+      questions: [
+        sc('icp_fit', 'Dans quelle mesure cette entreprise correspond-elle au profil client idéal ?', ['Hors profil', 'Correspond sur un critère', 'Correspond sur la plupart des critères', 'Correspond sur tous les critères']),
+        sc('buying_intent', 'À quel point le lead est-il proche de l\'achat ?', ['Simple curiosité', 'Explore sans calendrier', 'Évaluation active avec un calendrier', 'Prêt à acheter, demande un prix ou un contrat']),
+        no('is_decision_maker', 'Le contact peut influencer ou prendre la décision d\'achat.'),
+        ch('next_step', 'Quelle est la meilleure prochaine étape ?', { book_demo: 'Planifier une démo avec les ventes', nurture: 'Ajouter à une séquence de nurturing', disqualify: 'Hors cible, clôturer poliment' })
+      ] })
+  },
+  reviews: {
+    label: { en: 'Product review analysis', fr: 'Analyse d\'avis produit' },
+    en: () => ({ name: 'review-analysis', description: 'Extracts sentiment and topics from a customer review.', model: 'jev-latest',
+      params: [P('review', 'text', 'Review text', 'The headphones sound great and pairing was instant, but the left ear cushion started peeling after three weeks. Support replied fast and sent a replacement.')],
+      stateMode: 'text', state: '{{review}}',
+      questions: [
+        sc('sentiment', 'What is the overall sentiment of the review?', ['Very negative, regrets buying', 'Mostly negative', 'Mixed', 'Mostly positive', 'Enthusiastic, would recommend']),
+        no('mentions_quality', 'The review mentions a build quality or durability problem.'),
+        no('mentions_support', 'The review talks about customer support.'),
+        ch('main_topic', 'Which topic does the review focus on most?', { sound: 'Audio quality', comfort: 'Fit and comfort', durability: 'Build quality, wear and tear', connectivity: 'Bluetooth, pairing, battery', service: 'Delivery, support, returns' })
+      ] }),
+    fr: () => ({ name: 'review-analysis', description: 'Extrait le sentiment et les sujets d\'un avis client.', model: 'jev-latest',
+      params: [P('review', 'text', 'Texte de l\'avis', 'Le son de ce casque est excellent et l\'appairage instantané, mais le coussinet gauche s\'est décollé au bout de trois semaines. Le support a répondu vite et envoyé un remplacement.')],
+      stateMode: 'text', state: '{{review}}',
+      questions: [
+        sc('sentiment', 'Quel est le sentiment global de l\'avis ?', ['Très négatif, regrette l\'achat', 'Plutôt négatif', 'Mitigé', 'Plutôt positif', 'Enthousiaste, recommande']),
+        no('mentions_quality', 'L\'avis mentionne un problème de qualité ou de durabilité.'),
+        no('mentions_support', 'L\'avis parle du service client.'),
+        ch('main_topic', 'Sur quel sujet l\'avis porte-t-il principalement ?', { sound: 'Qualité audio', comfort: 'Confort et maintien', durability: 'Qualité de fabrication, usure', connectivity: 'Bluetooth, appairage, batterie', service: 'Livraison, support, retours' })
+      ] })
+  },
+  intents: {
+    label: { en: 'Chatbot intent router (parametric)', fr: 'Routeur d\'intentions (paramétrique)' },
+    en: () => ({ name: 'intent-router', description: 'Picks the intent of a chat message from a list supplied at runtime.', model: 'jev-latest',
+      params: [P('message', 'text', 'User message', "I moved last week, how do I change where my parcels get delivered?"),
+        P('intents', 'json', 'Available intents (key → description)', { track_order: 'Where is my order, delivery status', change_address: 'Update a shipping or billing address', cancel_order: 'Cancel an order before it ships', refund: 'Get money back for an item', account_access: 'Login, password, two-factor problems', talk_to_human: 'Explicitly asks for a person' })],
+      stateMode: 'text', state: '{{message}}',
+      questions: [
+        chP('intent', 'What does the user want to do?', 'intents', true),
+        no('needs_clarification', 'The message is too vague to act on without asking a follow-up question.'),
+        ch('language', 'Which language is the message written in?', { en: null, fr: null, es: null, de: null, other: null })
+      ] }),
+    fr: () => ({ name: 'intent-router', description: 'Choisit l\'intention d\'un message de chat parmi une liste fournie à l\'exécution.', model: 'jev-latest',
+      params: [P('message', 'text', 'Message utilisateur', 'J\'ai déménagé la semaine dernière, comment changer l\'adresse de livraison de mes colis ?'),
+        P('intents', 'json', 'Intentions disponibles (clé → description)', { track_order: 'Où est ma commande, suivi de livraison', change_address: 'Modifier une adresse de livraison ou de facturation', cancel_order: 'Annuler une commande avant expédition', refund: 'Se faire rembourser un article', account_access: 'Connexion, mot de passe, double authentification', talk_to_human: 'Demande explicitement un humain' })],
+      stateMode: 'text', state: '{{message}}',
+      questions: [
+        chP('intent', 'Que veut faire l\'utilisateur ?', 'intents', true),
+        no('needs_clarification', 'Le message est trop vague pour agir sans poser une question.'),
+        ch('language', 'Dans quelle langue le message est-il écrit ?', { en: null, fr: null, es: null, de: null, other: null })
+      ] })
+  },
+  resume: {
+    label: { en: 'Resume screening (parametric)', fr: 'Présélection de CV (paramétrique)' },
+    en: () => ({ name: 'resume-screening', description: 'Compares a resume with a job description and a list of must-have skills.', model: 'jev-latest',
+      params: [P('job', 'text', 'Job description', 'Senior backend engineer: design and run Node.js/TypeScript APIs on PostgreSQL, own production services, mentor two juniors.'),
+        P('resume', 'text', 'Resume summary', 'Six years as a backend developer. Built REST APIs in Node.js and Go, PostgreSQL and Redis. On-call for a payments service. No management experience.'),
+        P('seniority', 'json', 'Seniority scale', ['junior', 'mid', 'senior', 'staff'])],
+      stateMode: 'json', state: json({ job_description: '{{job}}', resume: '{{resume}}' }),
+      questions: [
+        sc('relevance', "How relevant is the candidate's experience to the job?", ['Unrelated field', 'Adjacent field', 'Some direct experience', 'Deep, direct experience']),
+        chP('seniority', 'Which seniority level does the resume show?', 'seniority', false),
+        no('has_typescript', 'The resume shows hands-on TypeScript experience.', 'TypeScript is named or clearly implied in a project', 'TypeScript is absent'),
+        no('has_mentoring', 'The candidate has mentored or managed other engineers.')
+      ] }),
+    fr: () => ({ name: 'resume-screening', description: 'Compare un CV à une fiche de poste et à des compétences clés.', model: 'jev-latest',
+      params: [P('job', 'text', 'Fiche de poste', 'Ingénieur·e backend senior : concevoir et opérer des API Node.js/TypeScript sur PostgreSQL, être responsable de services en production, accompagner deux juniors.'),
+        P('resume', 'text', 'Résumé du CV', 'Six ans de développement backend. API REST en Node.js et Go, PostgreSQL et Redis. Astreinte sur un service de paiement. Pas d\'expérience de management.'),
+        P('seniority', 'json', 'Échelle de séniorité', ['junior', 'confirme', 'senior', 'staff'])],
+      stateMode: 'json', state: json({ job_description: '{{job}}', resume: '{{resume}}' }),
+      questions: [
+        sc('relevance', 'À quel point l\'expérience du candidat correspond-elle au poste ?', ['Domaine sans rapport', 'Domaine voisin', 'Une partie d\'expérience directe', 'Expérience directe et approfondie']),
+        chP('seniority', 'Quel niveau de séniorité le CV montre-t-il ?', 'seniority', false),
+        no('has_typescript', 'Le CV montre une pratique réelle de TypeScript.', 'TypeScript est cité ou clairement implicite dans un projet', 'TypeScript est absent'),
+        no('has_mentoring', 'Le candidat a déjà accompagné ou encadré des développeurs.')
+      ] })
+  },
+  docs: {
+    label: { en: 'Document classification', fr: 'Classement de documents' },
+    en: () => ({ name: 'document-classifier', description: 'Classifies an uploaded document and checks it is complete.', model: 'jev-latest',
+      params: [P('document', 'text', 'Extracted text', 'INVOICE No. 2026-0412 — Date: 3 Oct 2026 — Bill to: Acme Corp, 12 Rue de la Paix, Paris — 40 hours consulting at €95 — Total excl. VAT €3,800 — VAT 20% €760 — Total €4,560 — Payment due in 30 days.')],
+      stateMode: 'text', state: '{{document}}',
+      questions: [
+        ch('doc_type', 'What kind of document is this?', { invoice: 'Bill asking for payment', quote: 'Price proposal before a sale', receipt: 'Proof that a payment was made', contract: 'Agreement with terms and signatures', other: 'Any other document' }),
+        no('has_tax_breakdown', 'The document shows tax amounts separately from the net total.'),
+        no('has_due_date', 'The document states when payment is due.'),
+        sc('legibility', 'How usable is the extracted text?', ['Garbled, mostly unreadable', 'Readable with gaps or OCR errors', 'Clean and complete'])
+      ] }),
+    fr: () => ({ name: 'document-classifier', description: 'Classe un document reçu et vérifie qu\'il est complet.', model: 'jev-latest',
+      params: [P('document', 'text', 'Texte extrait', 'FACTURE N° 2026-0412 — Date : 3 oct. 2026 — Client : Acme SAS, 12 rue de la Paix, Paris — 40 h de conseil à 95 € — Total HT 3 800 € — TVA 20 % 760 € — Total TTC 4 560 € — Paiement à 30 jours.')],
+      stateMode: 'text', state: '{{document}}',
+      questions: [
+        ch('doc_type', 'De quel type de document s\'agit-il ?', { invoice: 'Facture demandant un paiement', quote: 'Devis avant une vente', receipt: 'Preuve qu\'un paiement a été fait', contract: 'Accord avec conditions et signatures', other: 'Autre document' }),
+        no('has_tax_breakdown', 'Le document distingue la TVA du montant hors taxes.'),
+        no('has_due_date', 'Le document indique une échéance de paiement.'),
+        sc('legibility', 'Le texte extrait est-il exploitable ?', ['Illisible en grande partie', 'Lisible avec des trous ou erreurs OCR', 'Propre et complet'])
+      ] })
+  },
+  empty: {
+    label: { en: 'Blank agent', fr: 'Agent vide' },
+    en: () => ({ name: 'my-agent', description: '', model: 'jev-latest', params: [], stateMode: 'text', state: '', questions: [] }),
+    fr: () => ({ name: 'mon-agent', description: '', model: 'jev-latest', params: [], stateMode: 'text', state: '', questions: [] })
+  }
+};
+
+let A;
+let tab = 'request';
+try { A = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { A = null; }
+if (!A || !Array.isArray(A.questions)) A = PRESETS.support[lang]();
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(A)); } catch (e) {} }
+
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T()[el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = T()[el.dataset.i18nHtml]; });
+  document.querySelectorAll('[data-act="lang"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === lang));
+  $('#presetSel').innerHTML = `<option value="">${esc(T().examples)}…</option>` +
+    Object.entries(PRESETS).map(([k, p]) => `<option value="${k}">${esc(p.label[lang])}</option>`).join('');
+}
+
+/* ---------- builder rendering ---------- */
+function field(label, bind, val, opts = {}) {
+  const tag = opts.area
+    ? `<textarea id="f-${bind}" data-bind="${bind}" rows="${opts.rows || 3}" placeholder="${esc(opts.ph || '')}"${opts.aria ? ` aria-label="${esc(opts.aria)}"` : ''}>${esc(val)}</textarea>`
+    : `<input type="text" id="f-${bind}" data-bind="${bind}" class="${opts.mono ? 'mono' : ''}" value="${esc(val)}" placeholder="${esc(opts.ph || '')}"${opts.aria ? ` aria-label="${esc(opts.aria)}"` : ''}>`;
+  return label ? `<label class="f" for="f-${bind}">${label}${tag}</label>` : tag;
+}
+
+function renderBuilder() {
+  const t = T();
+  const paramKeys = A.params.map(p => p.key).filter(Boolean);
+  let h = '';
+  h += `<section class="box"><h2>${t.agent}</h2>
+    <div class="row">${field(t.name, 'name', A.name, { mono: true, ph: 'my-agent' })}${field(t.model, 'model', A.model, { mono: true, ph: 'jev-latest' }).replace('<input ', '<input list="models" ')}</div>
+    <datalist id="models"><option value="jev-latest"></option><option value="jev-preview"></option><option value="jev-1.14.0"></option><option value="jev-1.13.0"></option></datalist>
+    <p class="hint">${t.models_hint}</p>
+    ${field(t.description, 'description', A.description, { ph: t.desc_ph })}</section>`;
+
+  h += `<section class="box"><h2>${t.params} <small>${t.params_sub} <span class="mono">{{key}}</span></small></h2>`;
+  if (!A.params.length) h += `<p class="hint">${t.params_empty}</p>`;
+  A.params.forEach((p, i) => {
+    h += `<div class="param">
+      ${field('', `params.${i}.key`, p.key, { mono: true, ph: 'key', aria: 'Key' })}
+      <select data-bind="params.${i}.type" aria-label="${esc(t.p_type)}"><option value="text"${p.type === 'text' ? ' selected' : ''}>${t.p_text}</option><option value="json"${p.type === 'json' ? ' selected' : ''}>${t.p_json}</option></select>
+      <div class="desc">${field('', `params.${i}.desc`, p.desc, { ph: t.p_desc, aria: t.p_desc })}</div>
+      <button class="ghost" data-act="rmParam" data-i="${i}" aria-label="${esc(t.rm_param)}">✕</button>
+      <div class="val">${field('', `params.${i}.value`, p.value, { area: true, rows: p.type === 'json' ? 5 : 2, ph: p.type === 'json' ? t.p_val_json : t.p_val_text, aria: p.key })}</div>
+    </div>`;
+  });
+  h += `<div class="addbar"><button data-act="addParam">${t.add_param}</button></div></section>`;
+
+  h += `<section class="box"><h2>${t.state} <small>${t.state_sub}</small></h2>
+    <div class="seg" role="group" aria-label="${esc(t.state_fmt)}">
+      <button data-act="stateMode" data-m="text" aria-pressed="${A.stateMode === 'text'}">${t.state_text}</button>
+      <button data-act="stateMode" data-m="json" aria-pressed="${A.stateMode === 'json'}">${t.state_json}</button>
+    </div>
+    ${field('', 'state', A.state, { area: true, rows: A.stateMode === 'json' ? 7 : 4, ph: A.stateMode === 'json' ? '{ "ticket": "{{ticket}}" }' : t.state_ph_text, aria: t.state })}
+    <p class="hint">${t.state_hint}</p><p class="hint">${t.lang_hint}</p></section>`;
+
+  h += `<section class="box"><h2>${t.questions} <small>${t.questions_sub}</small></h2>`;
+  if (!A.questions.length) h += `<p class="hint">${t.questions_empty}</p>`;
+  A.questions.forEach((q, i) => { h += renderQ(q, i, paramKeys); });
+  h += `<div class="addbar">
+    <button class="add-choice" data-act="addQ" data-type="choice">+ Choice</button>
+    <button class="add-score" data-act="addQ" data-type="score">+ Score</button>
+    <button class="add-noul" data-act="addQ" data-type="noul">+ Noul</button></div></section>`;
+  $('#builder').innerHTML = h;
+}
+
+function renderQ(q, i, paramKeys) {
+  const t = T(), P = `questions.${i}`;
+  let h = `<div class="q" data-type="${q.type}">
+    <div class="qhead"><span class="chip">${q.type}</span>
+      <input type="text" class="mono" data-bind="${P}.id" value="${esc(q.id)}" placeholder="question_id" aria-label="${esc(t.q_id)}">
+      <div class="tools">
+        <button class="icon" data-act="mvQ" data-i="${i}" data-d="-1" aria-label="${esc(t.up)}"${i === 0 ? ' disabled' : ''}>↑</button>
+        <button class="icon" data-act="mvQ" data-i="${i}" data-d="1" aria-label="${esc(t.down)}"${i === A.questions.length - 1 ? ' disabled' : ''}>↓</button>
+        <button class="icon" data-act="dupQ" data-i="${i}" aria-label="${esc(t.dup)}">⧉</button>
+        <button class="ghost" data-act="rmQ" data-i="${i}" aria-label="${esc(t.rm_q)}">✕</button>
+      </div></div>
+    ${field(t.instructions, `${P}.instructions`, q.instructions, { area: true, rows: 2, ph: t.instr_ph })}`;
+
+  if (q.type === 'choice') {
+    h += `<div class="row" style="align-items:center">
+      <div class="seg" role="group" aria-label="${esc(t.src_label)}" style="flex:0 0 auto">
+        <button data-act="src" data-i="${i}" data-s="manual" aria-pressed="${q.source !== 'param'}">${t.src_manual}</button>
+        <button data-act="src" data-i="${i}" data-s="param" aria-pressed="${q.source === 'param'}">${t.src_param}</button>
+      </div><span class="count" style="flex:0 0 auto" id="cnt-${i}"></span></div>`;
+    if (q.source === 'param') {
+      const jsonKeys = A.params.filter(p => p.key && p.type === 'json').map(p => p.key);
+      h += `<p class="hint">${t.param_explain}</p>`;
+      if (jsonKeys.length) {
+        const opts = jsonKeys.map(k => `<option value="${esc(k)}"${k === q.param ? ' selected' : ''}>${esc(k)}</option>`).join('');
+        h += `<div class="row"><label class="f">${t.param_json}<select data-bind="${P}.param"><option value="">${t.choose}</option>${opts}</select></label>
+          <button class="narrow" data-act="newList" data-i="${i}" style="flex:0 0 auto">${t.new_list}</button></div>`;
+      } else {
+        h += `<div class="row" style="align-items:center"><span class="hint" style="flex:0 1 auto">${t.no_json_param}</span><button class="narrow" data-act="newList" data-i="${i}" style="flex:0 0 auto">${t.new_list}</button></div>`;
+      }
+      const pi = A.params.findIndex(p => p.key === q.param && p.type === 'json');
+      if (pi >= 0) h += field(t.list_value(q.param), `params.${pi}.value`, A.params[pi].value, { area: true, rows: 5 }).replace(`id="f-params.${pi}.value"`, `id="f-q${i}-params.${pi}.value"`).replace(`for="f-params.${pi}.value"`, `for="f-q${i}-params.${pi}.value"`) + `<p class="hint">${t.param_hint}</p>`;
+      h += `<div class="pv" id="prev-${i}"></div>`;
+    } else {
+      h += `<div class="opts">`;
+      q.items.forEach((it, j) => {
+        h += `<div class="opt">
+          <input type="text" class="mono k" data-bind="${P}.items.${j}.key" value="${esc(it.key)}" placeholder="${esc(t.opt_key)}" aria-label="${esc(t.opt_key_aria)}">
+          <textarea class="d" data-bind="${P}.items.${j}.desc" placeholder="${esc(t.opt_desc)}" aria-label="${esc(t.opt_desc_aria)}">${esc(it.desc)}</textarea>
+          <button class="ghost" data-act="rmItem" data-i="${i}" data-j="${j}" aria-label="${esc(t.rm_opt)}">✕</button></div>`;
+      });
+      h += `</div><div class="addbar"><button data-act="addItem" data-i="${i}">${t.add_opt}</button></div>`;
+    }
+    h += `<label class="check"><input type="checkbox" data-bind="${P}.addNone"${q.addNone ? ' checked' : ''}> ${t.add_none}</label>`;
+  }
+  if (q.type === 'score') {
+    h += `<div class="opts">`;
+    q.levels.forEach((lv, j) => {
+      h += `<div class="opt level"><span class="lvl">${j}</span>
+        <textarea class="d" data-bind="${P}.levels.${j}" placeholder="${esc(t.level_ph)}" aria-label="${esc(t.level)} ${j}">${esc(lv)}</textarea>
+        <button class="ghost" data-act="rmLevel" data-i="${i}" data-j="${j}" aria-label="${esc(t.rm_level)}">✕</button></div>`;
+    });
+    h += `</div><div class="addbar"><button data-act="addLevel" data-i="${i}"${q.levels.length >= 10 ? ' disabled' : ''}>${t.add_level}</button><span class="count" style="align-self:center">${t.levels_count(q.levels.length)}</span></div>`;
+  }
+  if (q.type === 'noul') {
+    h += `<label class="check"><input type="checkbox" data-bind="${P}.useCriteria"${q.useCriteria ? ' checked' : ''}> ${t.noul_crit}</label>`;
+    if (q.useCriteria) h += `<div class="row">${field('true', `${P}.t`, q.t, { ph: t.yes_ph })}${field('false', `${P}.f`, q.f, { ph: t.no_ph })}</div>`;
+  }
+  return h + `</div>`;
+}
+
+/* ---------- build / resolve ---------- */
+const PH = /\{\{\s*([\w.-]+)\s*\}\}/g;
+function loose(s) {
+  const t = s.trim();
+  if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) { try { return JSON.parse(t); } catch (e) {} }
+  return s;
+}
+function interp(s, vals) { return s.replace(PH, (m, k) => k in vals ? (typeof vals[k] === 'string' ? vals[k] : JSON.stringify(vals[k])) : m); }
+function resolveValue(s, vals) {
+  const m = s.trim().match(/^\{\{\s*([\w.-]+)\s*\}\}$/);
+  if (m && m[1] in vals) return vals[m[1]];
+  return loose(interp(s, vals));
+}
+function deepMap(v, fn) {
+  if (typeof v === 'string') return fn(v);
+  if (Array.isArray(v)) return v.map(x => deepMap(x, fn));
+  if (v && typeof v === 'object') { const o = {}; for (const k in v) o[k] = deepMap(v[k], fn); return o; }
+  return v;
+}
+function criteriaFromParam(v) {
+  if (Array.isArray(v)) {
+    const o = {};
+    v.forEach(x => {
+      if (typeof x === 'string') o[x] = null;
+      else if (x && typeof x === 'object') { const k = x.key ?? x.id ?? x.name; if (k != null) o[k] = x.description ?? x.desc ?? null; }
+    });
+    return o;
+  }
+  if (v && typeof v === 'object') return { ...v };
+  return null;
+}
+
+function build() {
+  const E = T().e, errs = [], warns = [], vals = {};
+  const seenP = new Set();
+  A.params.forEach(p => {
+    if (!p.key) { warns.push(E.p_nokey); return; }
+    if (!/^[\w.-]+$/.test(p.key)) errs.push(E.p_chars(p.key));
+    if (seenP.has(p.key)) errs.push(E.p_dup(p.key));
+    seenP.add(p.key);
+    if (p.type === 'json') { try { vals[p.key] = JSON.parse(p.value); } catch (e) { errs.push(E.p_json(p.key)); } }
+    else vals[p.key] = p.value;
+  });
+  const R = s => resolveValue(String(s ?? ''), vals);
+  const textParams = new Set(A.params.filter(p => p.type !== 'json').map(p => p.key));
+  const previews = {};
+
+  let state;
+  if (A.stateMode === 'json') {
+    try { state = deepMap(JSON.parse(A.state), R); }
+    catch (e) { errs.push(E.state_json); state = interp(A.state, vals); }
+  } else state = interp(A.state, vals);
+  if (state === '' || state == null) warns.push(E.state_empty);
+
+  const questions = {}; const ids = new Set(); const counts = {};
+  A.questions.forEach((q, i) => {
+    const label = q.id || `#${i + 1}`;
+    if (!q.id) errs.push(E.q_noid(label));
+    if (q.id && ids.has(q.id)) errs.push(E.q_dupid(q.id));
+    ids.add(q.id);
+    if (!String(q.instructions || '').trim()) errs.push(E.q_noinstr(label));
+    const o = { type: q.type, instructions: R(q.instructions) };
+    if (q.type === 'choice') {
+      let crit = {};
+      if (q.source === 'param') {
+        if (!q.param) errs.push(E.c_noparam(label));
+        else if (textParams.has(q.param)) errs.push(E.c_text(label, q.param));
+        else if (!(q.param in vals)) errs.push(E.c_missing(label, q.param));
+        else { const c = criteriaFromParam(vals[q.param]); if (!c) errs.push(E.c_shape(label, q.param)); else crit = c; }
+      } else {
+        const keys = new Set();
+        q.items.forEach(it => {
+          if (!it.key) { errs.push(E.c_nokey(label)); return; }
+          if (keys.has(it.key)) errs.push(E.c_dupkey(label, it.key));
+          keys.add(it.key);
+          crit[it.key] = String(it.desc || '').trim() ? R(it.desc) : null;
+        });
+      }
+      if (q.addNone && !(NONE_KEY in crit)) crit[NONE_KEY] = T().none_desc;
+      const n = Object.keys(crit).length; counts[i] = n; previews[i] = Object.keys(crit);
+      if (n === 0) errs.push(E.c_min(label)); else if (n === 1) warns.push(E.c_one(label));
+      if (n > 255) errs.push(E.c_max(label, n));
+      o.criteria = crit;
+    }
+    if (q.type === 'score') {
+      const lv = q.levels.filter(x => String(x).trim());
+      if (lv.length < 2) errs.push(E.s_min(label));
+      if (lv.length !== q.levels.length) warns.push(E.s_empty(label));
+      if (lv.some(x => /^\s*\d+\s*$/.test(x))) warns.push(E.s_digit(label));
+      o.criteria = lv.map(R);
+    }
+    if (q.type === 'noul' && q.useCriteria) {
+      if (!q.t.trim() || !q.f.trim()) warns.push(E.n_both(label));
+      o.criteria = { true: R(q.t), false: R(q.f) };
+    }
+    questions[q.id || `question_${i + 1}`] = o;
+  });
+  if (!A.questions.length) errs.push(E.no_q);
+
+  const req = { model: A.model || 'jev-latest', state, questions };
+  const tok = v => Math.round(JSON.stringify(v).length / 4);
+  const stTok = tok(state), allTok = tok(req);
+  if (allTok > 64000) warns.push(E.ctx_req(allTok));
+  Object.entries(questions).forEach(([id, q]) => { const n = stTok + tok(q); if (n > 32000) warns.push(E.ctx_q(id, n)); });
+  const left = new Set(); JSON.stringify(req).replace(PH, (m, k) => left.add(k));
+  left.forEach(k => warns.push(E.undef(k)));
+  const used = new Set(); JSON.stringify({ s: A.state, q: A.questions }).replace(PH, (m, k) => used.add(k));
+  A.questions.forEach(q => { if (q.type === 'choice' && q.source === 'param') used.add(q.param); });
+  A.params.forEach(p => { if (p.key && !used.has(p.key)) warns.push(E.unused(p.key)); });
+  return { req, errs, warns, counts, previews };
+}
+
+function agentDef() {
+  return { jevAgent: 1, name: A.name, description: A.description, model: A.model,
+    params: A.params.map(p => ({ key: p.key, type: p.type, description: p.desc, default: p.type === 'json' ? (() => { try { return JSON.parse(p.value); } catch (e) { return p.value; } })() : p.value })),
+    state: A.stateMode === 'json' ? (() => { try { return JSON.parse(A.state); } catch (e) { return A.state; } })() : A.state,
+    questions: Object.fromEntries(A.questions.map((q, i) => {
+      const o = { type: q.type, instructions: loose(String(q.instructions || '')) };
+      if (q.type === 'choice') {
+        o.criteria = q.source === 'param' ? `{{${q.param}}}` : Object.fromEntries(q.items.map(it => [it.key, String(it.desc || '').trim() ? loose(it.desc) : null]));
+        if (q.addNone) o.include_none_of_the_above = true;
+      }
+      if (q.type === 'score') o.criteria = q.levels.map(x => loose(String(x)));
+      if (q.type === 'noul' && q.useCriteria) o.criteria = { true: loose(q.t), false: loose(q.f) };
+      return [q.id || `question_${i + 1}`, o];
+    })) };
+}
+
+/* ---------- output ---------- */
+function hl(text) {
+  return esc(text).replace(/(&quot;(?:\\.|(?!&quot;)[^\\])*&quot;)(\s*:)?|\b(true|false|null)\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, (m, str, colon, lit) => {
+    if (str) {
+      const inner = str.replace(/\{\{\s*[\w.-]+\s*\}\}/g, x => `<span class="ph">${x}</span>`);
+      return colon ? `<span class="k">${inner}</span>${colon}` : `<span class="s">${inner}</span>`;
+    }
+    if (lit) return `<span class="l">${m}</span>`;
+    return `<span class="n">${m}</span>`;
+  });
+}
+let lastText = '';
+function renderOutput() {
+  const t = T();
+  const { req, errs, warns, counts, previews } = build();
+  const body = JSON.stringify(req, null, 2);
+  let text, html;
+  if (tab === 'request') { text = body; html = hl(body); }
+  else if (tab === 'agent') { text = JSON.stringify(agentDef(), null, 2); html = hl(text); }
+  else if (tab === 'curl') {
+    const head = `curl --fail-with-body -sS https://api.typesafe.ai/v1/systemone \\\n  -H "Authorization: Bearer $TYPESAFE_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  --data-binary @- <<'JSON'\n`;
+    text = head + body + '\nJSON';
+    html = esc(head) + hl(body) + '\nJSON';
+  } else { text = tsSnippet(); html = esc(text); }
+  lastText = text;
+  $('#code').innerHTML = html;
+  $('#tabhint').textContent = t['hint_' + tab];
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+
+  const nQ = Object.keys(req.questions).length;
+  const approxTok = Math.round(body.length / 4);
+  $('#stats').innerHTML = `<span>${t.n_questions(nQ)}</span><span><b>~${approxTok}</b> tokens</span><span><b>$${(approxTok * 0.042 / 1e6 * 1e3).toFixed(4)}</b> ${t.per_k}</span>`;
+
+  $('#issues').innerHTML = (!errs.length && !warns.length) ? `<p class="okline">${t.valid}</p>`
+    : `<ul class="issues">${errs.map(e => `<li class="e"><b><span>${t.err}</span></b>${esc(e)}</li>`).join('')}${warns.map(w => `<li class="w"><b><span>${t.note}</span></b>${esc(w)}</li>`).join('')}</ul>`;
+  A.questions.forEach((q, i) => {
+    const c = document.getElementById('cnt-' + i); if (c) c.textContent = counts[i] != null ? t.opts_count(counts[i]) : '';
+    const pv = document.getElementById('prev-' + i);
+    if (pv) pv.innerHTML = previews[i] && previews[i].length ? `<span class="hint">${t.preview}</span>` + previews[i].map(k => `<code>${esc(k)}</code>`).join('') : '';
+  });
+
+  const pg = $('#pglink');
+  if (window.LZString) {
+    const payload = { apiVersion: 'v1', documentText: typeof req.state === 'string' ? req.state : JSON.stringify(req.state, null, 2), promptsText: JSON.stringify(req.questions, null, 2), selectedModels: [req.model] };
+    pg.href = 'https://console.typesafe.ai/decode#share/' + LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+    pg.hidden = false;
+  } else pg.hidden = true;
+  save();
+}
+
+function tsSnippet() {
+  const def = agentDef();
+  const pType = A.params.filter(p => p.key).map(p => `  ${/^[A-Za-z_$][\w$]*$/.test(p.key) ? p.key : JSON.stringify(p.key)}: ${p.type === 'json' ? 'unknown' : 'string'};`).join('\n');
+  const fnName = (A.name || 'agent').replace(/[^\w]+(\w)/g, (m, c) => c.toUpperCase()).replace(/^\d/, '_$&');
+  return `// ${A.name || 'agent'} — generated by Jev Agent Builder
+const AGENT = ${JSON.stringify(def, null, 2)} as const;
+
+type Params = {
+${pType || '  // no parameters'}
+};
+
+const PH = /\\{\\{\\s*([\\w.-]+)\\s*\\}\\}/g;
+
+function fill(v: unknown, p: Record<string, unknown>): unknown {
+  if (typeof v === "string") {
+    const whole = v.trim().match(/^\\{\\{\\s*([\\w.-]+)\\s*\\}\\}$/);
+    if (whole && whole[1] in p) return p[whole[1]];
+    return v.replace(PH, (m, k) => (k in p ? (typeof p[k] === "string" ? (p[k] as string) : JSON.stringify(p[k])) : m));
+  }
+  if (Array.isArray(v)) return v.map((x) => fill(x, p));
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x, p)]));
+  return v;
+}
+
+function toCriteria(v: unknown): Record<string, unknown> {
+  if (Array.isArray(v)) return Object.fromEntries(v.map((x: any) => (typeof x === "string" ? [x, null] : [x.key ?? x.id, x.description ?? null])));
+  return { ...(v as Record<string, unknown>) };
+}
+
+export async function ${fnName}(params: Params, apiKey = process.env.TYPESAFE_API_KEY!) {
+  const questions: Record<string, any> = {};
+  for (const [id, q] of Object.entries(AGENT.questions) as [string, any][]) {
+    const { include_none_of_the_above, ...rest } = q;
+    const out: any = fill(rest, params);
+    if (out.type === "choice") {
+      out.criteria = toCriteria(out.criteria);
+      if (include_none_of_the_above) out.criteria.${NONE_KEY} ??= ${JSON.stringify(T().none_desc)};
+    }
+    questions[id] = out;
+  }
+  const res = await fetch("https://api.typesafe.ai/v1/systemone", {
+    method: "POST",
+    headers: { Authorization: \`Bearer \${apiKey}\`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: AGENT.model, state: fill(AGENT.state, params), questions }),
+  });
+  if (!res.ok) throw new Error(\`TypeSafe \${res.status}: \${await res.text()}\`);
+  return res.json();
+}`;
+}
+
+/* ---------- events ---------- */
+function setPath(path, value) {
+  const parts = path.split('.'); let o = A;
+  for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+  o[parts[parts.length - 1]] = value;
+}
+const builder = $('#builder');
+builder.addEventListener('input', e => {
+  const el = e.target; if (!el.dataset.bind) return;
+  setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value);
+  document.querySelectorAll(`[data-bind="${el.dataset.bind}"]`).forEach(o => { if (o !== el && o.type !== 'checkbox') o.value = el.value; });
+  renderOutput();
+});
+builder.addEventListener('change', e => {
+  const el = e.target; if (!el.dataset.bind) return;
+  if (el.tagName === 'SELECT' || el.type === 'checkbox') { setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value); renderBuilder(); renderOutput(); }
+});
+$('#presetSel').addEventListener('change', e => {
+  const k = e.target.value; if (!k) return;
+  A = PRESETS[k][lang](); e.target.value = '';
+  renderBuilder(); renderOutput();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const i = +b.dataset.i, j = +b.dataset.j, act = b.dataset.act;
+  const q = A.questions[i];
+  let rerender = true;
+  switch (act) {
+    case 'lang': lang = b.dataset.l; try { localStorage.setItem(LANG_KEY, lang); } catch (err) {} applyStatic(); break;
+    case 'addParam': A.params.push({ key: `param_${A.params.length + 1}`, type: 'text', desc: '', value: '' }); break;
+    case 'rmParam': A.params.splice(i, 1); break;
+    case 'stateMode': A.stateMode = b.dataset.m; break;
+    case 'addQ': {
+      const n = A.questions.filter(x => x.type === b.dataset.type).length + 1;
+      const base = { id: `${b.dataset.type}_${n}`, type: b.dataset.type, instructions: '' };
+      if (base.type === 'choice') Object.assign(base, { source: 'manual', param: '', addNone: false, items: [{ key: 'option_a', desc: '' }, { key: 'option_b', desc: '' }] });
+      if (base.type === 'score') base.levels = ['', '', ''];
+      if (base.type === 'noul') Object.assign(base, { useCriteria: false, t: '', f: '' });
+      A.questions.push(base); break;
+    }
+    case 'rmQ': A.questions.splice(i, 1); break;
+    case 'dupQ': { const c = JSON.parse(JSON.stringify(q)); c.id = q.id + '_copy'; A.questions.splice(i + 1, 0, c); break; }
+    case 'mvQ': { const d = +b.dataset.d; const [x] = A.questions.splice(i, 1); A.questions.splice(i + d, 0, x); break; }
+    case 'src': q.source = b.dataset.s; if (q.source === 'param' && !A.params.some(p => p.key === q.param && p.type === 'json')) q.param = (A.params.find(p => p.type === 'json') || {}).key || ''; break;
+    case 'newList': {
+      let key = (q.id || 'choice') + '_options', n = 2;
+      while (A.params.some(p => p.key === key)) key = (q.id || 'choice') + '_options_' + n++;
+      A.params.push({ key, type: 'json', desc: '', value: JSON.stringify({ option_a: 'Description A', option_b: 'Description B' }, null, 2) });
+      q.param = key; break;
+    }
+    case 'addItem': q.items.push({ key: '', desc: '' }); break;
+    case 'rmItem': q.items.splice(j, 1); break;
+    case 'addLevel': if (q.levels.length < 10) q.levels.push(''); break;
+    case 'rmLevel': q.levels.splice(j, 1); break;
+    case 'copy': rerender = false; copy(); break;
+    case 'import': rerender = false; doImport(); break;
+    default: rerender = false;
+  }
+  if (rerender) { renderBuilder(); renderOutput(); }
+});
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; renderOutput(); });
+
+function toast(msg) {
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1600);
+}
+function copy() {
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents($('#code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast(T().select_fallback); };
+  try { navigator.clipboard.writeText(lastText).then(() => toast(T().copied), fallback); } catch (e) { fallback(); }
+}
+
+function str(v) { return v == null ? '' : typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+function doImport() {
+  const msg = $('#importMsg'), t = T();
+  let d; try { d = JSON.parse($('#importText').value); } catch (e) { msg.textContent = t.bad_json; return; }
+  try {
+    const isDef = d.jevAgent || Array.isArray(d.params);
+    const n = {
+      name: d.name || 'imported-agent', description: d.description || '', model: d.model || 'jev-latest',
+      params: isDef ? (d.params || []).map(p => ({ key: p.key, type: p.type === 'json' ? 'json' : 'text', desc: p.description || '', value: p.type === 'json' ? JSON.stringify(p.default, null, 2) : str(p.default) })) : [],
+      stateMode: typeof d.state === 'string' ? 'text' : 'json',
+      state: typeof d.state === 'string' ? d.state : JSON.stringify(d.state ?? {}, null, 2),
+      questions: Object.entries(d.questions || {}).map(([id, q]) => {
+        const o = { id, type: q.type, instructions: str(q.instructions) };
+        if (q.type === 'choice') {
+          const m = typeof q.criteria === 'string' && q.criteria.match(/^\{\{\s*([\w.-]+)\s*\}\}$/);
+          Object.assign(o, { source: m ? 'param' : 'manual', param: m ? m[1] : '', addNone: !!q.include_none_of_the_above,
+            items: m ? [] : Object.entries(q.criteria || {}).map(([k, v]) => ({ key: k, desc: str(v) })) });
+        } else if (q.type === 'score') o.levels = (q.criteria || []).map(str);
+        else if (q.type === 'noul') Object.assign(o, { useCriteria: !!q.criteria, t: str(q.criteria?.true), f: str(q.criteria?.false) });
+        else throw new Error(t.unknown_type(q.type));
+        return o;
+      })
+    };
+    A = n; renderBuilder(); renderOutput(); msg.textContent = t.imported(n.questions.length);
+  } catch (e) { msg.textContent = t.import_fail + e.message; }
+}
+
+applyStatic();
+renderBuilder();
+renderOutput();
+</script>
+
+</body>
+</html>
