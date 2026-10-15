@@ -221,11 +221,11 @@ footer.foot a{color:var(--ink)}
 </div></main>
 
 <footer class="foot gut"><div class="inner">
-  <div class="vbox"><div class="t">Jev Agent Builder</div><div class="b">Version 0.3<br>MIT. Made by ET Technology Consulting.</div></div>
+  <div class="vbox"><div class="t">Jev Agent Builder</div><div class="b">Version 0.3<br>MIT. Made by <a class="site-link" href="https://www.et-technology-consulting.com/en" target="_blank" rel="noopener">ET Technology Consulting</a>.</div></div>
   <div class="meta">
     <span data-i18n="footer"></span>
     <span data-i18n="unofficial"></span>
-    <span><span data-i18n="format"></span> <a href="https://docs.typesafe.ai/primitives" target="_blank" rel="noopener">docs.typesafe.ai/primitives</a> · <a href="https://et-technology-consulting.com" target="_blank" rel="noopener">et-technology-consulting.com</a></span>
+    <span><span data-i18n="format"></span> <a href="https://docs.typesafe.ai/primitives" target="_blank" rel="noopener">docs.typesafe.ai/primitives</a> · <a class="site-link" href="https://www.et-technology-consulting.com/en" target="_blank" rel="noopener">et-technology-consulting.com</a></span>
   </div>
 </div></footer>
 
@@ -243,6 +243,7 @@ const I18N = {
     c2_l: 'Parametric', c2: 'Write {{params}} anywhere. One agent, every input.',
     c3_l: 'Ships Anywhere', c3: 'Export the request, a reusable definition, cURL or TypeScript.',
     unofficial: 'Unofficial tool, not affiliated with TypeSafe AI. Visual style is a tribute.',
+    kept_edits: 'Your edits are kept as they are. Load an example to see it in English.',
     lede: 'Compose a Jev agent (TypeSafe AI): a state, <code class="mono">{{…}}</code> parameters and Choice, Score or Noul questions. The JSON for <code class="mono">POST /v1/systemone</code> updates live.',
     examples: 'Load an example', jump: 'See the JSON ↓', tab_request: 'Request', tab_agent: 'Agent (template)',
     copy: 'Copy', playground: 'Open in Playground ↗', import_title: 'Import JSON',
@@ -292,6 +293,7 @@ const I18N = {
     c2_l: 'Paramétrique', c2: 'Écrivez des {{paramètres}} partout. Un agent, toutes vos données.',
     c3_l: 'Prêt à brancher', c3: 'Exportez la requête, une définition réutilisable, du cURL ou du TypeScript.',
     unofficial: 'Outil non officiel, sans lien avec TypeSafe AI. Le style visuel est un clin d\'œil.',
+    kept_edits: 'Vos modifications sont conservées telles quelles. Chargez un exemple pour le voir en français.',
     lede: 'Composez un agent Jev (TypeSafe AI) : un état, des paramètres <code class="mono">{{…}}</code> et des questions Choice, Score ou Noul. Le JSON prêt pour <code class="mono">POST /v1/systemone</code> se met à jour en direct.',
     examples: 'Charger un exemple', jump: 'Voir le JSON ↓', tab_request: 'Requête', tab_agent: 'Agent (template)',
     copy: 'Copier', playground: 'Ouvrir dans le Playground ↗', import_title: 'Importer un JSON',
@@ -337,7 +339,7 @@ const I18N = {
 };
 let lang;
 try { lang = localStorage.getItem(LANG_KEY); } catch (e) {}
-if (!I18N[lang]) lang = (navigator.language || 'en').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+if (!I18N[lang]) lang = 'en';
 const T = () => I18N[lang];
 
 /* ---------- examples (generic) ---------- */
@@ -522,6 +524,7 @@ function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(A)); } catch
 
 function applyStatic() {
   document.documentElement.lang = lang;
+  document.querySelectorAll('.site-link').forEach(a => { a.href = lang === 'fr' ? 'https://www.et-technology-consulting.com' : 'https://www.et-technology-consulting.com/en'; });
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T()[el.dataset.i18n]; });
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = T()[el.dataset.i18nHtml]; });
   document.querySelectorAll('[data-act="lang"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === lang));
@@ -894,7 +897,17 @@ document.addEventListener('click', e => {
   const q = A.questions[i];
   let rerender = true;
   switch (act) {
-    case 'lang': lang = b.dataset.l; try { localStorage.setItem(LANG_KEY, lang); } catch (err) {} applyStatic(); break;
+    case 'lang': {
+      const prev = lang, next = b.dataset.l;
+      if (prev === next) { rerender = false; break; }
+      const cur = JSON.stringify(A);
+      const match = Object.keys(PRESETS).find(k => JSON.stringify(PRESETS[k][prev]()) === cur);
+      lang = next; try { localStorage.setItem(LANG_KEY, lang); } catch (err) {}
+      applyStatic();
+      if (match) A = PRESETS[match][lang]();
+      else if (A.questions.length || A.params.length) toast(T().kept_edits);
+      break;
+    }
     case 'addParam': A.params.push({ key: `param_${A.params.length + 1}`, type: 'text', desc: '', value: '' }); break;
     case 'rmParam': A.params.splice(i, 1); break;
     case 'stateMode': A.stateMode = b.dataset.m; break;
